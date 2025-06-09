@@ -1,53 +1,79 @@
 using Microsoft.AspNetCore.Mvc;
-using MvcTodoApp.Models;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace MvcTodoApp.Controllers
+namespace TaskManagementSystem.Controllers
 {
     public class HomeController : Controller
     {
-        // قائمة محاكاة لقاعدة البيانات (في الذاكرة)
-        private static List<TaskItem> tasks = new List<TaskItem>
-        {
-            new TaskItem { Id = 1, Title = "تدرب على MVC Design Pattern", IsComplete = false },
-            new TaskItem { Id = 2, Title = "تدرب على N-tier Architecture", IsComplete = false },
-            new TaskItem { Id = 3, Title = "تدرب على استخدام git", IsComplete = false },
-        };
+        private static List<TaskModel> _tasks = new List<TaskModel>();
+        private static int _nextId = 1;
 
-        /// <summary>
-        /// يعرض القائمة الرئيسية للمهام.
-        /// </summary>
         public IActionResult Index()
         {
-            return View(tasks);
+            return View(_tasks);
         }
 
-        /// <summary>
-        /// إضافة مهمة جديدة.
-        /// </summary>
         [HttpPost]
-        public IActionResult AddTask(string title)
+        public IActionResult Add(string title)
         {
-            if (!string.IsNullOrEmpty(title))
+            if (!string.IsNullOrWhiteSpace(title))
             {
-                int newId = tasks.Max(t => t.Id) + 1;
-                var newTask = new TaskItem { Id = newId, Title = title, IsComplete = false };
-                tasks.Add(newTask);
+                _tasks.Add(new TaskModel
+                {
+                    Id = _nextId++,
+                    Title = title,
+                    IsCompleted = false
+                });
             }
             return RedirectToAction("Index");
         }
 
-        /// <summary>
-        /// تعيين مهمة كمكتملة.
-        /// </summary>
         [HttpPost]
-        public IActionResult CompleteTask(int id)
+        public IActionResult Complete(int id)
         {
-            var task = tasks.FirstOrDefault(t => t.Id == id);
+            var task = _tasks.FirstOrDefault(t => t.Id == id);
             if (task != null)
-                task.IsComplete = true;
+            {
+                task.IsCompleted = true;
+            }
             return RedirectToAction("Index");
         }
+
+        [HttpPost]
+        public IActionResult Edit(TaskModel task)
+        {
+            if (ModelState.IsValid)
+            {
+                var taskToUpdate = _tasks.FirstOrDefault(t => t.Id == task.Id);
+                if (taskToUpdate != null)
+                {
+                    // Update only the title if needed
+                    taskToUpdate.Title = task.Title;
+                    
+                    // If you want to update completion status too:
+                    // taskToUpdate.IsCompleted = task.IsCompleted;
+                }
+            }
+            return RedirectToAction("Index");
+        }
+
+        [HttpPost]
+        public IActionResult Delete(int id)
+        {
+            var task = _tasks.FirstOrDefault(t => t.Id == id);
+            if (task != null)
+            {
+                _tasks.Remove(task);
+            }
+            return RedirectToAction("Index");
+        }
+    }
+
+    public class TaskModel
+    {
+        public int Id { get; set; }
+        public string Title { get; set; }
+        public bool IsCompleted { get; set; }
     }
 }
